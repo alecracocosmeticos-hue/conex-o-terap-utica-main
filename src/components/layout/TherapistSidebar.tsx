@@ -9,6 +9,7 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
+  Globe,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -21,6 +22,7 @@ const menuItems = [
   { icon: FileEdit, label: 'Observações', path: '/therapist/notes' },
   { icon: Calendar, label: 'Agenda', path: '/therapist/schedule' },
   { icon: User, label: 'Perfil', path: '/therapist/profile' },
+  { icon: Globe, label: 'Meu Perfil Público', path: '/therapist/public-profile' },
 ];
 
 export const TherapistSidebar: React.FC = () => {
@@ -77,7 +79,7 @@ export const TherapistSidebar: React.FC = () => {
       <nav className="flex-1 py-4 overflow-y-auto scrollbar-thin">
         <ul className="space-y-1 px-2">
           {menuItems.map((item) => {
-            const isActive = location.pathname === item.path || 
+            const isActive = location.pathname === item.path ||
               (item.path === '/therapist/patients' && location.pathname.startsWith('/therapist/patients/'));
             return (
               <li key={item.path}>

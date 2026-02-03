@@ -230,14 +230,15 @@ const PatientList = () => {
   };
 
   const handleInviteClick = () => {
+    // Check limits before opening dialog
     if (!canAddPatient(activePatients.length)) {
       toast({
         title: "Limite do plano atingido",
-        description: "Você atingiu o limite de pacientes do seu plano. Faça upgrade para adicionar mais.",
+        description: "Você atingiu o limite de pacientes ativos no seu plano atual.",
         variant: "destructive",
         action: (
           <Button variant="outline" size="sm" onClick={() => navigate('/subscription')}>
-            Ver Planos
+            Upgrade
           </Button>
         ),
       });
@@ -484,3 +485,116 @@ const PatientList = () => {
 };
 
 export default PatientList;
+
+// Subcomponent for Connection Requests (Marketplace)
+const ConnectionRequestsList = ({ activeCount }: { activeCount: number }) => {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const { canAddPatient } = usePlan();
+  const { toast } = useToast();
+  const navigate = useNavigate();
+
+  const { data: requests = [] } = useQuery({
+    queryKey: ['connection-requests', user?.id],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from('connection_requests')
+        .select(`
+                    id,
+                    patient_id,
+                    message,
+                    created_at,
+                    profiles!connection_requests_patient_id_fkey (
+                        full_name,
+                        email,
+                        avatar_url
+                    )
+                `)
+        .eq('therapist_id', user!.id)
+        .eq('status', 'pending');
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user
+  });
+
+  const handleAction = async (requestId: string, action: 'accepted' | 'rejected', patientId: string) => {
+    if (action === 'accepted' && !canAddPatient(activeCount)) {
+      toast({
+        title: "Limite do plano atingido",
+        description: "Você precisa fazer upgrade para aceitar mais pacientes.",
+        variant: 'destructive',
+        action: <Button variant="outline" size="sm" onClick={() => navigate('/subscription')}>Upgrade</Button>
+      });
+      return;
+    }
+
+    try {
+      // Update request status
+      const { error: updateError } = await (supabase as any)
+        .from('connection_requests')
+        .update({ status: action })
+        .eq('id', requestId);
+
+      if (updateError) throw updateError;
+
+      if (action === 'accepted') {
+        const { error: relationError } = await supabase
+          .from('patient_therapist_relations')
+          .insert({
+            therapist_id: user!.id,
+            patient_id: patientId,
+            status: 'active'
+          });
+        if (relationError) throw relationError;
+      }
+
+      toast({ title: action === 'accepted' ? "Paciente aceito!" : "Solicitação recusada." });
+      queryClient.invalidateQueries({ queryKey: ['connection-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['therapist-patients'] });
+
+    } catch (error) {
+      console.error(error);
+      toast({ title: "Erro ao processar", variant: 'destructive' });
+    }
+  };
+
+  return (
+    <Card>
+      <CardContent className="pt-6">
+        {requests.length === 0 ? (
+          <EmptyState
+            icon={Users}
+            title="Nenhuma solicitação"
+            description="Você não tem novas solicitações de atendimento."
+          />
+        ) : (
+          <div className="space-y-4">
+            {requests.map((req: any) => (
+              <div key={req.id} className="flex flex-col md:flex-row items-start md:items-center justify-between p-4 border rounded-lg gap-4">
+                <div className="flex gap-4">
+                  <Avatar>
+                    <AvatarFallback>{req.profiles?.full_name?.[0]}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <h4 className="font-semibold">{req.profiles?.full_name}</h4>
+                    <p className="text-sm text-muted-foreground">{req.message || "Sem mensagem inicial."}</p>
+                    <span className="text-xs text-muted-foreground">{new Date(req.created_at).toLocaleDateString()}</span>
+                  </div>
+                </div>
+                <div className="flex gap-2 w-full md:w-auto">
+                  <Button variant="outline" className="flex-1 md:flex-none" onClick={() => handleAction(req.id, 'rejected', req.patient_id)}>
+                    Recusar
+                  </Button>
+                  <Button className="flex-1 md:flex-none" onClick={() => handleAction(req.id, 'accepted', req.patient_id)}>
+                    Aceitar
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};

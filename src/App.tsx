@@ -40,6 +40,8 @@ import MyHistory from "@/pages/patient/MyHistory";
 import Timeline from "@/pages/patient/Timeline";
 import PatientProfile from "@/pages/patient/Profile";
 import MyTherapist from "@/pages/patient/MyTherapist";
+import SelfView from "@/pages/patient/SelfView";
+import IntakeFormPage from "@/pages/patient/IntakeForm";
 
 // Therapist pages
 import TherapistDashboard from "@/pages/therapist/Dashboard";
@@ -48,6 +50,9 @@ import PatientDetail from "@/pages/therapist/PatientDetail";
 import PrivateNotes from "@/pages/therapist/PrivateNotes";
 import Schedule from "@/pages/therapist/Schedule";
 import TherapistProfile from "@/pages/therapist/Profile";
+
+import PublicProfileConfig from "@/pages/therapist/PublicProfileConfig";
+import FindTherapist from "@/pages/patient/FindTherapist";
 
 // Admin pages
 import AdminDashboard from "@/pages/admin/Dashboard";
@@ -92,6 +97,9 @@ const App = () => (
               {/* Patient */}
               <Route path="/patient" element={<RoleRoute role="patient"><PatientLayout /></RoleRoute>}>
                 <Route index element={<PatientDashboard />} />
+                <Route path="find-therapist" element={<FindTherapist />} />
+                <Route path="intake" element={<IntakeFormPage />} />
+                <Route path="self-view" element={<SelfView />} />
                 <Route path="checkin" element={<CheckIn />} />
                 <Route path="checkin-history" element={<CheckInHistory />} />
                 <Route path="records" element={<EmotionalRecords />} />
@@ -106,6 +114,7 @@ const App = () => (
               {/* Therapist */}
               <Route path="/therapist" element={<RoleRoute role="therapist"><TherapistLayout /></RoleRoute>}>
                 <Route index element={<TherapistDashboard />} />
+                <Route path="public-profile" element={<PublicProfileConfig />} />
                 <Route path="patients" element={<PatientList />} />
                 <Route path="patients/:id" element={<PatientDetail />} />
                 <Route path="notes" element={<PrivateNotes />} />
