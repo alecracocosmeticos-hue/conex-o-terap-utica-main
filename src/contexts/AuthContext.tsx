@@ -24,6 +24,7 @@ interface AuthContextType {
   isRoleLoading: boolean;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signInWithGoogle: () => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   setUserRole: (role: AppRole, therapistType?: TherapistType) => Promise<{ error: Error | null }>;
   refreshProfile: () => Promise<void>;
@@ -159,6 +160,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { error: error as Error | null };
   };
 
+  const signInWithGoogle = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+    return { error: error as Error | null };
+  };
+
   const signOut = async () => {
     await supabase.auth.signOut();
     setUser(null);
@@ -227,6 +238,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isRoleLoading,
         signUp,
         signIn,
+        signInWithGoogle,
         signOut,
         setUserRole,
         refreshProfile,
